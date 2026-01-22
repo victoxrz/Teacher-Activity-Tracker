@@ -1,1 +1,1 @@
-# Moodle plugin for tracking teacher activies
+# Moodle plugin for tracking teacher activities
