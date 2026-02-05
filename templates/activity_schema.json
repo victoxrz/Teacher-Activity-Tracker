@@ -1,0 +1,48 @@
+{
+    "title": "Activity Schema",
+    "type": "object",
+    "required": ["key"],
+    "properties": {
+        "key": {
+            "type": "string",
+            "title": "Activity Key",
+            "description": "A unique identifier for the activity, e.g., 'quiz1', 'assignment2'. It will also be used to get the title from the language file."
+        },
+        "score": {
+            "type": "object",
+            "title": "Score",
+            "description": "TODO: should be able to reference other activities' scores",
+            "properties": {
+                "formula": {
+                    "type": "string",
+                    "title": "Scoring Formula",
+                    "description": "The formula used to calculate the score for the activity"
+                },
+                "vars": {
+                    "type": "object",
+                    "title": "Variables",
+                    "description": "The variables used in the scoring formula",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "child_activities": {
+            "title": "Child activities",
+            "type": "object",
+            "key": {
+                "type": "string",
+                "title": "Child Activity Key",
+                "description": "A unique identifier for the child title activity"
+            },
+            "description": "List of child activities associated with this activity",
+            "properties": {
+                "title": "Child Activity Title",
+                "items": {
+                    "$ref": "#"
+                }
+            }
+        }
+    }
+}
