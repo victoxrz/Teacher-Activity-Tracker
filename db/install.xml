@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/teacher_activities/db" VERSION="20260126" COMMENT="XMLDB file for Moodle local/teacher_activities"
+<XMLDB PATH="local/teacher_activities/db" VERSION="20260209" COMMENT="XMLDB file for Moodle local/teacher_activities"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="submissions" COMMENT="Store general information about each submission">
+    <TABLE NAME="local_teacher_submissions" COMMENT="Store general information about each submission">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="firstname" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="First name of the teacher"/>
@@ -20,19 +20,25 @@
         <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="submission_items" COMMENT="Store activities related to each submission">
+    <TABLE NAME="local_teacher_items" COMMENT="Store activities related to each submission">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sectionkey" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Represents the key to the section in which the following activity should be located, e.g. &quot;didactic_activity&quot;"/>
         <FIELD NAME="activitykey" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Key (from template json file) to identify what activity the item corresponds to"/>
         <FIELD NAME="activitysubkey" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Key to a subtype of activity defined in the template json file. It is optional, as not every activity has a subtype"/>
-        <FIELD NAME="details" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Stored in JSON format. Details about an item (examples: denumirea platformei, numele coautorilor), variable structure based on the template json file"/>
+        <FIELD NAME="vars" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Stored in JSON format. Variables used to calculate the score for this submission item. If there are no variables, it will be just an empty json object."/>
+        <FIELD NAME="details" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Stored in JSON format. Details about an item (examples: denumirea platformei, numele coautorilor), variable structure based on the template json file"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="evaluationscore" TYPE="number" LENGTH="6" NOTNULL="false" SEQUENCE="false" DECIMALS="2" COMMENT="The score entered by the committee"/>
+        <FIELD NAME="urladdress" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Url address to the (file, page, ...) proof for this activity"/>
+        <FIELD NAME="submissionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to the parent table"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="submissionid" TYPE="foreign" FIELDS="submissionid" REFTABLE="local_teacher_submissions" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

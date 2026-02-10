@@ -3,6 +3,7 @@
 namespace local_teacher_activities\services;
 
 use local_teacher_activities\forms\activity_form;
+use stdClass;
 
 class session_service
 {
@@ -32,30 +33,47 @@ class session_service
     /**
      * Get data for a specific step
      */
-    public static function get_step(string $section, int $step): object|null
+    public static function get_activity(string $sectionkey, string $activitykey): object|null
     {
         global $SESSION;
         self::init();
-        return $SESSION->{self::SESSION_KEY}[$section][$step] ?? null;
+        return $SESSION->{self::SESSION_KEY}[$sectionkey][$activitykey] ?? null;
+    }
+
+    /**
+     * Set all session data
+     */
+    public static function set_all(array $data)
+    {
+        global $SESSION;
+        self::init();
+        $SESSION->{self::SESSION_KEY} = $data;
     }
 
     /**
      * Set data for a specific step
      */
-    public static function set_step(string $section, int $step, $data)
+    public static function set_activity(string $sectionkey, string $activitykey, stdClass|null $data)
     {
         global $SESSION;
         self::init();
-        $SESSION->{self::SESSION_KEY}[$section][$step] = $data;
+        if (!empty((array) $data))
+            $SESSION->{self::SESSION_KEY}[$sectionkey][$activitykey] = $data;
     }
 
     /**
      * Get repeat count for a specific step
      */
-    public static function get_repeat_count(string $section, int $step): int
+    public static function get_item_count(string $sectionkey, string $activitykey): int
     {
-        $step_data = self::get_step($section, $step);
+        $step_data = self::get_activity($sectionkey, $activitykey);
         return $step_data->{activity_form::REPEAT_HIDDEN_NAME} ?? 0;
+    }
+
+    public static function get_submission_id(): int
+    {
+        $data = self::get_all();
+        return $data['personal_data'][0]->id ?? 0;
     }
 
     /**
@@ -70,9 +88,9 @@ class session_service
     /**
      * Check if step has data
      */
-    public static function has_step(string $section, int $step)
+    public static function has_activity(string $sectionkey, string $activitykey): bool
     {
         $data = self::get_all();
-        return isset($data[$section][$step]);
+        return isset($data[$sectionkey][$activitykey]);
     }
 }

@@ -17,14 +17,14 @@ class template_service
     /**
      * Get activities with caching
      */
-    public static function get_activities(): object
+    public static function get_activities(): array
     {
         $cache = self::get_cache();
         $activities = $cache->get(self::CACHE_KEY);
 
         if ($activities === false) {
             $json_path = __DIR__ . '/../../templates/activities.json';
-            $activities = json_decode(file_get_contents($json_path));
+            $activities = json_decode(file_get_contents($json_path), true);
             $cache->set(self::CACHE_KEY, $activities);
         }
 
@@ -40,29 +40,15 @@ class template_service
         $cache->delete(self::CACHE_KEY);
     }
 
-    public static function get_section_key(int $index): string
-    {
-        $sections = array_keys((array) self::get_activities());
-        return $sections[$index] ?? '';
-    }
-
-    public static function get_section(int $index): array
+    public static function get_section(string $section_key): ?array
     {
         $activities = self::get_activities();
-        $section_keys = array_keys((array) $activities);
-        $section_key = $section_keys[$index] ?? '';
-        return $activities->{$section_key} ?? [];
+        return $activities[$section_key];
     }
 
-    public static function get_section_by_key(string $section_key): array
+    public static function get_activity(string $section_key, string $activity_key): ?array
     {
-        $activities = self::get_activities();
-        return $activities->{$section_key} ?? [];
-    }
-
-    public static function get_activity(int $section_index, int $activity_index): ?object
-    {
-        $section = self::get_section($section_index);
-        return $section[$activity_index] ?? null;
+        $section = self::get_section($section_key);
+        return $section[$activity_key];
     }
 }

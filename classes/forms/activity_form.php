@@ -10,23 +10,32 @@ require_once($CFG->libdir . '/formslib.php');
 
 class activity_form extends \moodleform
 {
-    // Suffixes for different element types
-    private const SUFFIX_ITEMTYPE = '_itemtype';
-    private const SUFFIX_VAR = '_var';
-    private const SUFFIX_DETAIL = '_detail';
+    // Prefixes for different element types
+    public const PREFIX_ITEMTYPE = 'itemtype-';
+    public const PREFIX_VAR = 'var-';
+    public const PREFIX_DETAIL = 'detail-';
 
 
     // Names for repeat elements
-    public const REPEAT_HIDDEN_NAME = 'item_repeats';
+    public const REPEAT_HIDDEN_NAME = 'item_count';
     private const DELETE_BUTTON_NAME = 'remove_item';
+    private const SUBMIT_BUTTON_NAME = 'submitbutton';
+    private const BACK_BUTTON_NAME = 'backbutton';
 
+    protected static $fieldstoremove = [self::SUBMIT_BUTTON_NAME, self::BACK_BUTTON_NAME];
 
     // Store hidden elements with their conditions to manage conditional visibility
     protected $_hidden_elements = [];
+
+    public static function get_filemanager_options()
+    {
+        return ['subdirs' => 0, 'maxfiles' => 10];
+    }
+
     /**
      * Recursively define activity elements
      * 
-     * @param object $activity The activity object
+     * @param array $activity The activity object
      * @param array $repeatarray Reference to the repeat elements array
      * @param array $repeatoptions Reference to the repeat options array
      * @param array{element:string, value:string}|null $parent The parent element details ['element' => string, 'value' => string], if any
@@ -36,18 +45,18 @@ class activity_form extends \moodleform
     {
         $mform = $this->_form;
 
-        if (isset($activity->child_activities) && isset($activity->child_activities->items)) {
+        if (isset($activity['child_activities']) && isset($activity['child_activities']['items'])) {
             // 1. Publication Type
             $puboptions = ['' => get_string('choosedots')];
-            foreach ($activity->child_activities->items as $child) {
-                $puboptions[$child->key] = get_string($child->key, 'local_teacher_activities');
+            foreach ($activity['child_activities']['items'] as $child) {
+                $puboptions[$child['key']] = get_string($child['key'], 'local_teacher_activities');
             }
 
-            $elementname = "{$activity->key}" . self::SUFFIX_ITEMTYPE;
+            $elementname = self::PREFIX_ITEMTYPE . "{$activity['key']}";
             $repeatarray[] = $mform->createElement(
                 'select',
                 $elementname,
-                get_string($activity->child_activities->key, 'local_teacher_activities'),
+                get_string($activity['child_activities']['key'], 'local_teacher_activities'),
                 $puboptions
             );
 
@@ -57,20 +66,20 @@ class activity_form extends \moodleform
                 $this->_hidden_elements[$elementname] = [$parent['element'], $parent['value']];
             }
 
-            foreach ($activity->child_activities->items as $child) {
+            foreach ($activity['child_activities']['items'] as $child) {
                 $this->define_activity(
                     $child,
                     $repeatarray,
                     $repeatoptions,
-                    ['element' => $elementname, 'value' => $child->key]
+                    ['element' => $elementname, 'value' => $child['key']]
                 );
             }
         }
 
         // 2. Variables for each activity
-        if (isset($activity->score->vars))
-            foreach ($activity->score->vars as $varkey => $varlabel) {
-                $var_elementname = $activity->key . $varkey . self::SUFFIX_VAR;
+        if (isset($activity['score']['vars']))
+            foreach ($activity['score']['vars'] as $varkey => $varlabel) {
+                $var_elementname = self::PREFIX_VAR . "{$varkey}-{$activity['key']}";
                 $repeatarray[] = $mform->createElement(
                     'float',
                     $var_elementname,
@@ -82,9 +91,9 @@ class activity_form extends \moodleform
             }
 
         // 3. Details for each activity
-        if (isset($activity->details))
-            foreach ($activity->details as $detailkey => $detaillabel) {
-                $detail_elementname = "{$activity->key}_{$detailkey}" . self::SUFFIX_DETAIL;
+        if (isset($activity['details']))
+            foreach ($activity['details'] as $detailkey => $detaillabel) {
+                $detail_elementname = self::PREFIX_DETAIL . "{$detailkey}-{$activity['key']}";
                 $repeatarray[] = $mform->createElement(
                     'textarea',
                     $detail_elementname,
@@ -102,14 +111,17 @@ class activity_form extends \moodleform
         $customdata = $this->_customdata;
         $activity = $customdata['activity'];
         $is_last_step = $customdata['is_last_step'] ?? false;
-        $repeat_count = $customdata['repeat_count'] ?? 0;
+        $item_count = $customdata['item_count'] ?? 0;
         $step = $customdata['step'] ?? 0;
 
         // Title
-        $mform->addElement('html', "<h3>$step. " . get_string($activity->key, 'local_teacher_activities') . "</h3>");
+        $mform->addElement('html', "<h3>$step. " . get_string($activity['key'], 'local_teacher_activities') . "</h3>");
 
         $repeatarray = [];
         $repeatoptions = [];
+
+        $repeatarray[] = $mform->createElement('hidden', 'id');
+        $repeatoptions['id']['type'] = PARAM_INT;
 
         // Card opening HTML
         $repeatarray[] = $mform->createElement(
@@ -141,8 +153,7 @@ class activity_form extends \moodleform
             'itemfile',
             get_string('section_item_file', 'local_teacher_activities'),
             null,
-            ['maxbytes' => 1024 * 1024, 'accepted_types' => '*']
-
+            self::get_filemanager_options()
         );
         $repeatoptions['itemfile']['type'] = PARAM_FILE;
 
@@ -164,7 +175,7 @@ class activity_form extends \moodleform
 
         $this->repeat_elements(
             $repeatarray,
-            $repeat_count,
+            $item_count,
             $repeatoptions,
             self::REPEAT_HIDDEN_NAME,
             'add_item',
@@ -176,7 +187,11 @@ class activity_form extends \moodleform
 
         // Submit buttons
         $buttonarray = [];
-        $buttonarray[] = $mform->createElement('cancel', 'backbutton', 'Back');
+        $buttonarray[] = $mform->createElement(
+            'cancel',
+            'backbutton',
+            get_string('section_backbutton', 'local_teacher_activities')
+        );
         $buttonarray[] = $mform->createElement(
             'submit',
             'submitbutton',
@@ -196,7 +211,7 @@ class activity_form extends \moodleform
 
             // 1. Check only item type fields
             // require if visible
-            if (str_ends_with($key, self::SUFFIX_ITEMTYPE)) {
+            if (str_starts_with($key, self::PREFIX_ITEMTYPE)) {
                 foreach ($value as $idx => $val) {
                     $isvisible = true;
                     if (isset($this->_hidden_elements[$key])) {
@@ -221,7 +236,7 @@ class activity_form extends \moodleform
             }
 
             // 2. Check only variable fields
-            if (str_ends_with($key, self::SUFFIX_VAR)) {
+            if (str_starts_with($key, self::PREFIX_VAR)) {
                 foreach ($value as $idx => $val) {
                     if ($val <= 0) {
                         $errors["{$key}[$idx]"] = get_string('err_positive_number', 'local_teacher_activities');
@@ -250,10 +265,8 @@ class activity_form extends \moodleform
      * 
      * @param \stdClass|null $formdata The form data object
      */
-    private function process_repeat_elements($formdata)
+    private function hard_remove($formdata)
     {
-        $removed = 0;
-
         if (isset($formdata->{self::DELETE_BUTTON_NAME . '-hidden'})) {
             $removed = \count($formdata->{self::DELETE_BUTTON_NAME . '-hidden'});
             $formdata->{self::REPEAT_HIDDEN_NAME} -= $removed; // Adjust repeat count if items were removed
@@ -265,20 +278,38 @@ class activity_form extends \moodleform
                 }
             }
         }
+
+        if (isset($formdata->{self::REPEAT_HIDDEN_NAME}) && $formdata->{self::REPEAT_HIDDEN_NAME} === 0) {
+            unset($formdata->{self::REPEAT_HIDDEN_NAME});
+        }
+        unset($formdata->{self::DELETE_BUTTON_NAME . '-hidden'});
     }
 
-    // TODO: find out if this is the best place for this
     public function get_data()
     {
         $data = parent::get_data();
-        $this->process_repeat_elements($data);
+
+        if (\is_object($data)) {
+            foreach (static::$fieldstoremove as $field) {
+                unset($data->{$field});
+            }
+        }
+
+        $this->hard_remove($data);
         return $data;
     }
 
     public function get_submitted_data()
     {
         $data = parent::get_submitted_data();
-        $this->process_repeat_elements($data);
+
+        if (\is_object($data)) {
+            foreach (static::$fieldstoremove as $field) {
+                unset($data->{$field});
+            }
+        }
+
+        $this->hard_remove($data);
         return $data;
     }
 
