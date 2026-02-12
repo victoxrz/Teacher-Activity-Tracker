@@ -14,7 +14,7 @@ class api
     {
         $to_return = [];
         $submission_data = new submission($submissionid);
-        $to_return['personal_data'][0] = $submission_data->to_defined_record();
+        $to_return['personal_data']['general_data'] = $submission_data->to_defined_record();
 
         $submission_items = submission_item::get_records(['submissionid' => $submission_data->get('id')], 'sectionkey, activitykey');
 
@@ -33,22 +33,25 @@ class api
                 $item_count = 0;
             }
 
-            foreach (self::get_form_types($item) as $itemkey => $itemvalue) {
-                if (!isset($current_activity->{$itemkey})) {
-                    $current_activity->{$itemkey} = [];
+            if ($item->get('activitysubkey') !== null)
+                foreach (self::get_form_types($item) as $itemkey => $itemvalue) {
+                    if (!isset($current_activity->{$itemkey})) {
+                        $current_activity->{$itemkey} = [];
+                    }
+                    $current_activity->{$itemkey}[$item_count] = $itemvalue;
                 }
-                $current_activity->{$itemkey}[$item_count] = $itemvalue;
-            }
 
-            $itemtypes = explode('-', $item->get('activitysubkey'));
-            foreach (self::get_form_vars(
-                $item,
-                $itemtypes[\count($itemtypes) - 1]
-            ) as $varkey => $varvalue) {
-                if (!isset($current_activity->{$varkey})) {
-                    $current_activity->{$varkey} = [];
+            if ($item->get('vars') !== null && $item->get('activitysubkey') !== null) {
+                $itemtypes = explode('-', $item->get('activitysubkey'));
+                foreach (self::get_form_vars(
+                    $item,
+                    $itemtypes[\count($itemtypes) - 1]
+                ) as $varkey => $varvalue) {
+                    if (!isset($current_activity->{$varkey})) {
+                        $current_activity->{$varkey} = [];
+                    }
+                    $current_activity->{$varkey}[$item_count] = $varvalue;
                 }
-                $current_activity->{$varkey}[$item_count] = $varvalue;
             }
 
             $current_activity->itemlink[$item_count] = $item->get('urladdress');
@@ -105,10 +108,16 @@ class api
     {
         // Logic to save submission data to the database
         // https://moodledev.io/docs/5.2/apis/subsystems/form/usage/files#store-updated-set-of-files
-        if (!isset($submission_data['personal_data']) || !isset($submission_data['personal_data'][0])) {
+        if (
+            !isset($submission_data['personal_data']) ||
+            !isset($submission_data['personal_data']['general_data'])
+        ) {
             throw new \InvalidArgumentException('Personal data is required to save submission.');
         }
-        $personalData = new submission($submission_data['personal_data'][0]->id ?? 0, $submission_data['personal_data'][0]);
+        $personalData = new submission(
+            $submission_data['personal_data']['general_data']->id ?? 0,
+            $submission_data['personal_data']['general_data']
+        );
         unset($submission_data['personal_data']);
 
         $submission_items = [];
@@ -149,73 +158,6 @@ class api
             $personalData->save();
             foreach ($submission_items as $item) {
                 $item['persistent']->set('submissionid', $personalData->get('id'));
-                $item['persistent']->save();
-
-                file_save_draft_area_files(
-                    $item['draftid'],
-                    \context_system::instance()->id,
-                    'local_teacher_activities',
-                    'submission_item_files',
-                    $item['persistent']->get('id'),
-                    activity_form::get_filemanager_options()
-                );
-            }
-
-            $transaction->allow_commit();
-        } catch (\Exception $e) {
-            // Extra cleanup steps.
-            // Re-throw exception after commiting.
-            $transaction->rollback($e);
-        }
-    }
-
-    // TODO: would it be better to delete and copy existing items?
-    public static function update_submission($submission_data)
-    {
-        if (!isset($submission_data['personal_data']) || !isset($submission_data['personal_data'][0])) {
-            throw new \InvalidArgumentException('Personal data is required to save submission.');
-        }
-        $personal_data = new submission($submission_data['personal_data'][0]->id, $submission_data['personal_data'][0]);
-        unset($submission_data['personal_data']);
-
-        $submission_items = [];
-        foreach ($submission_data as $section_key => $activities) {
-            foreach ($activities as $activity_key => $data) {
-                $itemcount = $data->{activity_form::REPEAT_HIDDEN_NAME} ?? 0;
-
-                for ($i = 0; $i < $itemcount; $i++) {
-                    $id = $data->id[$i] ?? 0;
-                    $item = new submission_item($id); // Load existing record to update
-                    if ($item->is_evaluted()) {
-                        continue; // Skip items that have already been evaluated
-                    }
-
-                    $item->from_record((object) [
-                        'sectionkey' => $section_key,
-                        'activitykey' => $activity_key,
-                        'activitysubkey' => form_helper::get_item_types($data, $activity_key, $i),
-                        'vars' => json_encode(form_helper::get_item_vars($data, $i)),
-                        'details' => json_encode(form_helper::get_item_details($data, $i)),
-                        'urladdress' => empty($data->itemlink[$i]) ? null : $data->itemlink[$i],
-                        'evaluationscore' => null,
-                    ]);
-
-                    $submission_items[] = [
-                        'persistent' => $item,
-                        'draftid' => $data->itemfile[$i]
-                    ];
-                }
-            }
-        }
-
-        global $DB;
-
-        try {
-            $transaction = $DB->start_delegated_transaction();
-
-            $personal_data->save();
-            foreach ($submission_items as $item) {
-                $item['persistent']->set('submissionid', $personal_data->get('id'));
                 $item['persistent']->save();
 
                 file_save_draft_area_files(

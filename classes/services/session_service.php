@@ -75,7 +75,7 @@ class session_service
     public static function get_submission_id(): int
     {
         $data = self::get_all();
-        return $data['personal_data'][0]->id ?? 0;
+        return $data['personal_data']['general_data']->id ?? 0;
     }
 
     /**

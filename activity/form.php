@@ -12,7 +12,6 @@ require_login();
 // echo '<pre>';
 // print_r(session_service::get_all());
 // echo '</pre>';
-// api::update_submission(api::get_submission(1));
 
 $url_step = optional_param('step', 0, PARAM_INT);
 $sid = optional_param('sid', 0, PARAM_INT);
@@ -21,7 +20,7 @@ $sid = optional_param('sid', 0, PARAM_INT);
 $total_steps = [];
 $total_steps['personal_data'] = [
     'totalcount' => 1,
-    'activity_keys' => [0 => 0], // Dummy key for personal data section
+    'activity_keys' => [0 => 'general_data'], // Dummy key for personal data section
 ];
 
 foreach (template_service::get_activities() as $section_key => $activities) {
