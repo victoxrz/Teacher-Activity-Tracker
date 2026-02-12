@@ -17,8 +17,8 @@ $table = new html_table();
 $table->head = ['Prenume', 'Nume', 'Funcție', 'Acțiuni'];
 
 foreach ($submissions as $sub) {
-    $editurl = new moodle_url('/local/teacher_activities/activity/form.php', ['id' => $sub->id]);
-    $items_link = new moodle_url('/local/teacher_activities/activity/view.php', ['id' => $sub->id]);
+    $editurl = new moodle_url('/local/teacher_activities/activity/form.php', ['sid' => $sub->id]);
+    $items_link = new moodle_url('/local/teacher_activities/activity/view.php', ['sid' => $sub->id]);
 
     $table->data[] = [
         s($sub->firstname),

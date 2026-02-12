@@ -19,6 +19,9 @@ class general_form extends \moodleform
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
+        // Title
+        $mform->addElement('html', "<h3>" . get_string('general_data', 'local_teacher_activities') . "</h3>");
+
         // Last name input
         $mform->addElement('text', 'lastname', 'Nume');
         $mform->setType('lastname', PARAM_TEXT);

@@ -57,7 +57,9 @@ class session_service
     {
         global $SESSION;
         self::init();
-        if (!empty((array) $data))
+        if (empty((array) $data))
+            unset($SESSION->{self::SESSION_KEY}[$sectionkey][$activitykey]);
+        else
             $SESSION->{self::SESSION_KEY}[$sectionkey][$activitykey] = $data;
     }
 

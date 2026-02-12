@@ -18,12 +18,13 @@ $string['b'] = 'Variabila B';
 $string['c'] = 'Variabila C';
 
 // Sections
-$string['personal_data'] = 'Date personale';
+$string['personal_data'] = 'DATE PERSONALE';
 $string['didactic_activity'] = 'A. ACTIVITATE DIDACTICĂ';
 $string['scientific_activity'] = 'B. ACTIVITATE ŞTIINȚIFICĂ, DE CREAȚIE ŞI PERFORMANȚĂ SPORTIVĂ';
 $string['recognition_impact'] = 'C. RECUNOAŞTERE ŞI IMPACT AL ACTIVITĂȚII';
 
 // Activities
+$string['general_data'] = 'Date generale';
 $string['monografii'] = 'Monografii (min. 5 c.a.) recomandate spre editare de structuri/subdiviziuni instituționale, naționale sau internaționale relevante';
 $string['monografii_child_title'] = 'Tip ediție';
 $string['capitol_monografie'] = 'Capitol în monografie';

@@ -6,7 +6,6 @@ use local_teacher_activities\services\api;
 use moodle_url;
 
 require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
-require_once($_SERVER['DOCUMENT_ROOT'] . '/lib/validateurlsyntax.php');
 
 require_login();
 
@@ -109,6 +108,13 @@ if ($mform->is_cancelled()) {
         $mform->set_data(session_service::get_activity($section_key, $activity_key));
 
     echo $OUTPUT->header();
-    $mform->display();
+
+    echo $OUTPUT->render(new \local_teacher_activities\output\form_page(
+        $total_steps,
+        $url_step,
+        $sid,
+        $mform->render()
+    ));
+
     echo $OUTPUT->footer();
 }
